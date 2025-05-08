@@ -2,17 +2,20 @@ import React, { useState, useContext, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { EyeIcon, EyeOffIcon, LockIcon, UserIcon } from 'lucide-react';
+import { EyeIcon, EyeOffIcon, LockIcon, UserIcon, CheckCircleIcon } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import Spinner from '../components/Spinner';
+import axios from 'axios';
 
-interface SignInForm {
+interface SignUpForm {
+  name: string;
   email: string;
   password: string;
-  rememberMe: boolean;
+  confirmPassword: string;
+  terms: boolean;
 }
 
-const SignIn: React.FC = () => {
+const SignUp: React.FC = () => {
   const { login, isAuthenticated, isAdmin } = useContext(AuthContext);
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
@@ -22,29 +25,46 @@ const SignIn: React.FC = () => {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<SignInForm>({
+    watch,
+  } = useForm<SignUpForm>({
     defaultValues: {
+      name: '',
       email: '',
       password: '',
-      rememberMe: false,
+      confirmPassword: '',
+      terms: false,
     },
   });
 
-  // Redirect authenticated users to dashboard
+  // Watch password for confirmPassword validation
+  const password = watch('password');
+
+  // Redirect authenticated users
   useEffect(() => {
     if (isAuthenticated) {
       navigate(isAdmin ? '/dashboard' : '/order', { replace: true });
     }
   }, [isAuthenticated, isAdmin, navigate]);
 
-  const onSubmit: SubmitHandler<SignInForm> = async (data) => {
+  const onSubmit: SubmitHandler<SignUpForm> = async (data) => {
     setIsLoading(true);
     try {
-      await login(data.email, data.password, data.rememberMe);
-      toast.success('Signed in successfully!', { theme: 'light' });
+      // Mock API call for signup
+      const response = await axios.post('/api/signup', {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+      });
+      const { token, user } = response.data;
+
+      // Auto-login after signup
+      await login(data.email, data.password, false); // No rememberMe for signup
+      toast.success(`Welcome, ${user.name}! Your account has been created.`, { theme: 'light' });
       navigate(isAdmin ? '/dashboard' : '/order');
     } catch (error: any) {
-      toast.error(error.message || 'Sign in failed. Please try again.', { theme: 'light' });
+      toast.error(error.response?.data?.message || 'Sign up failed. Please try again.', {
+        theme: 'light',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -58,8 +78,32 @@ const SignIn: React.FC = () => {
           <h1 className="text-3xl font-bold text-indigo-600">Mount Meru SoyCo</h1>
           <p className="text-sm text-gray-500">Quality Cooking Oils</p>
         </div>
-        <h2 className="text-2xl font-bold text-gray-800 text-center mb-6">Sign In</h2>
+        <h2 className="text-2xl font-bold text-gray-800 text-center mb-6">Create an Account</h2>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div>
+            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <UserIcon size={16} className="mr-2 text-indigo-600" />
+              Full Name
+            </label>
+            <input
+              type="text"
+              {...register('name', {
+                required: 'Full name is required',
+                minLength: {
+                  value: 2,
+                  message: 'Name must be at least 2 characters long',
+                },
+              })}
+              className="w-full border border-gray-300 rounded-md p-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition"
+              aria-invalid={errors.name ? 'true' : 'false'}
+              placeholder="John Doe"
+            />
+            {errors.name && (
+              <p className="text-xs text-red-500 mt-1" role="alert">
+                {errors.name.message}
+              </p>
+            )}
+          </div>
           <div>
             <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
               <UserIcon size={16} className="mr-2 text-indigo-600" />
@@ -124,37 +168,63 @@ const SignIn: React.FC = () => {
               </p>
             )}
           </div>
-          <div className="flex justify-between items-center">
+          <div>
+            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <LockIcon size={16} className="mr-2 text-indigo-600" />
+              Confirm Password
+            </label>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              {...register('confirmPassword', {
+                required: 'Please confirm your password',
+                validate: (value) => value === password || 'Passwords do not match',
+              })}
+              className="w-full border border-gray-300 rounded-md p-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition"
+              aria-invalid={errors.confirmPassword ? 'true' : 'false'}
+              placeholder="********"
+            />
+            {errors.confirmPassword && (
+              <p className="text-xs text-red-500 mt-1" role="alert">
+                {errors.confirmPassword.message}
+              </p>
+            )}
+          </div>
+          <div>
             <label className="flex items-center space-x-2 text-sm text-gray-700">
               <input
                 type="checkbox"
-                {...register('rememberMe')}
+                {...register('terms', {
+                  required: 'You must agree to the terms and conditions',
+                })}
                 className="border-gray-300 rounded focus:ring-indigo-600"
               />
-              <span>Remember me</span>
+              <span>
+                I agree to the{' '}
+                <Link to="/terms" className="text-indigo-600 hover:text-indigo-700 underline">
+                  Terms and Conditions
+                </Link>
+              </span>
             </label>
-            <Link
-              to="/forgot-password"
-              className="text-sm text-indigo-600 hover:text-indigo-700 underline"
-              aria-label="Forgot your password?"
-            >
-              Forgot Password?
-            </Link>
+            {errors.terms && (
+              <p className="text-xs text-red-500 mt-1" role="alert">
+                {errors.terms.message}
+              </p>
+            )}
           </div>
           <button
             type="submit"
             disabled={isLoading}
             className="w-full bg-indigo-600 text-white rounded-md py-3 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-600 disabled:opacity-50 flex items-center justify-center transition"
-            aria-label="Sign In"
+            aria-label="Sign Up"
           >
             {isLoading && <Spinner loading={true} variant="inline" />}
-            Sign In
+            Sign Up
           </button>
         </form>
         <p className="mt-4 text-center text-sm text-gray-600">
-          Don't have an account?{' '}
-          <Link to="/signup" className="text-indigo-600 hover:text-indigo-700 underline">
-            Sign Up
+          Already have an account?{' '}
+          <Link to="/signin" className="text-indigo-600 hover:text-indigo-700 underline">
+            Sign In
           </Link>
         </p>
       </div>
@@ -162,4 +232,4 @@ const SignIn: React.FC = () => {
   );
 };
 
-export default SignIn;
+export default SignUp;

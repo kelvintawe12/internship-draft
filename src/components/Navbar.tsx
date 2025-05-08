@@ -1,20 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 import Spinner from './Spinner';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { isAuthenticated, isAdmin, user, logout, loading } = useContext(AuthContext);
   const navigate = useNavigate();
-  const isAuthenticated = !!localStorage.getItem('adminToken'); // Mocked auth check
 
-  const handleLogout = () => {
-    setIsLoggingOut(true);
-    setTimeout(() => {
-      localStorage.removeItem('adminToken');
-      setIsLoggingOut(false);
-      navigate('/admin/login');
-    }, 1000);
+  const handleLogout = async () => {
+    try {
+      await logout(); // Calls AuthContext logout (handles API and toast)
+      navigate('/signin');
+    } catch (error) {
+      // Error already toasted in AuthContext
+    }
   };
 
   return (
@@ -25,6 +25,11 @@ const Navbar: React.FC = () => {
             <Link to="/" className="text-xl font-bold" aria-label="Home">
               Mount Meru SoyCo
             </Link>
+            {isAuthenticated && user && (
+              <span className="ml-4 text-sm hidden md:block">
+                Welcome, {user.name}
+              </span>
+            )}
           </div>
           <div className="hidden md:flex items-center space-x-4">
             <Link to="/" className="hover:bg-indigo-700 px-3 py-2 rounded" aria-label="Home">
@@ -44,21 +49,23 @@ const Navbar: React.FC = () => {
             </Link>
             {isAuthenticated ? (
               <>
-                <Link to="/admin" className="hover:bg-indigo-700 px-3 py-2 rounded" aria-label="Admin">
-                  Admin
-                </Link>
+                {isAdmin && (
+                  <Link to="/dashboard" className="hover:bg-indigo-700 px-3 py-2 rounded" aria-label="Dashboard">
+                    Dashboard
+                  </Link>
+                )}
                 <button
                   onClick={handleLogout}
                   className="hover:bg-indigo-700 px-3 py-2 rounded flex items-center"
-                  disabled={isLoggingOut}
+                  disabled={loading}
                   aria-label="Logout"
                 >
-                  {isLoggingOut ? <Spinner /> : 'Logout'}
+                  {loading ? <Spinner loading={true} variant="inline" /> : 'Logout'}
                 </button>
               </>
             ) : (
-              <Link to="/admin/login" className="hover:bg-indigo-700 px-3 py-2 rounded" aria-label="Admin">
-                Admin
+              <Link to="/signin" className="hover:bg-indigo-700 px-3 py-2 rounded" aria-label="Sign In">
+                Sign In
               </Link>
             )}
           </div>
@@ -83,6 +90,11 @@ const Navbar: React.FC = () => {
       {isOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            {isAuthenticated && user && (
+              <span className="block px-3 py-2 text-sm text-gray-200">
+                Welcome, {user.name}
+              </span>
+            )}
             <Link
               to="/"
               className="block hover:bg-indigo-700 px-3 py-2 rounded"
@@ -125,34 +137,36 @@ const Navbar: React.FC = () => {
             </Link>
             {isAuthenticated ? (
               <>
-                <Link
-                  to="/admin"
-                  className="block hover:bg-indigo-700 px-3 py-2 rounded"
-                  onClick={() => setIsOpen(false)}
-                  aria-label="Admin"
-                >
-                  Admin
-                </Link>
+                {isAdmin && (
+                  <Link
+                    to="/dashboard"
+                    className="block hover:bg-indigo-700 px-3 py-2 rounded"
+                    onClick={() => setIsOpen(false)}
+                    aria-label="Dashboard"
+                  >
+                    Dashboard
+                  </Link>
+                )}
                 <button
                   onClick={() => {
                     handleLogout();
                     setIsOpen(false);
                   }}
                   className="block hover:bg-indigo-700 px-3 py-2 rounded w-full text-left"
-                  disabled={isLoggingOut}
+                  disabled={loading}
                   aria-label="Logout"
                 >
-                  {isLoggingOut ? <Spinner /> : 'Logout'}
+                  {loading ? <Spinner loading={true} variant="inline" /> : 'Logout'}
                 </button>
               </>
             ) : (
               <Link
-                to="/admin/login"
+                to="/signin"
                 className="block hover:bg-indigo-700 px-3 py-2 rounded"
                 onClick={() => setIsOpen(false)}
-                aria-label="Admin"
+                aria-label="Sign In"
               >
-                Admin
+                Sign In
               </Link>
             )}
           </div>
