@@ -1,0 +1,36 @@
+{
+    "home": {
+      "logo_alt": "Ikirango cya Mount Meru SoyCo Rwanda",
+      "title": "Gushoboza u Rwanda n'Ibicuruzwa by'Imbuto za Soja by'Umwuga",
+      "subtitle": "Koroshya ibikorwa byawe hamwe na dashiboro yacu y'itehnologiya, yagenewe kubika neza no gukora.",
+      "sign_in": "Injira",
+      "get_started": "Tangira",
+      "toggle_language": "Hindura Ururimi",
+      "scroll_to_top": "Gusubira Hejuru",
+      "features": {
+        "title": "Kuki Uhitamo Mount Meru SoyCo?",
+        "sustainability": "Imikorere Yihangira Ibidukikije",
+        "sustainability_desc": "Twiyemeje gukora ibicuruzwa bya soja mu buryo butishyira ibidukikije mu kaga.",
+        "efficiency": "Imikorere Y'ubushobozi",
+        "efficiency_desc": "Wongere ubushobozi bwawe mu guha ibicuruzwa hamwe n'ibarurishamibare ry'igihe nyacyo.",
+        "community": "Ingaruka ku Muryango",
+        "community_desc": "Gushoboza abahinzi b'ahantu no gushyira imbaraga mu muryango mu buryo burambye."
+      },
+      "cta": {
+        "title": "Witeguye Guhindura Imikorere Yawe?",
+        "subtitle": "Injira muri Mount Meru SoyCo Rwanda ukoreshe ibikoresho by'itehnologiya kugira ngo ushobore.",
+        "button": "Tangira Nonaha"
+      },
+      "footer": {
+        "about": "Ibyacu",
+        "about_desc": "Mount Meru SoyCo Rwanda itanga ibicuruzwa bya soja by'umwuga ifite intego yo gukora neza no guhangana.",
+        "links": "Amahuza Yihuse",
+        "contact": "Twandikire",
+        "contact_desc": "Twandikire kuri info@mountmerusoyco.rw cyangwa +250 788 123 456."
+      },
+      "copyright": "© 2025 Mount Meru SoyCo Rwanda",
+      "about": "Ibyerekeye",
+      "contact": "Twandikire",
+      "privacy": "Amategeko y'Ubuzima Bwite"
+    }
+  }
