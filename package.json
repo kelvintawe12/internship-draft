@@ -11,15 +11,16 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.8.1",
-    "axios": "^1.7.7",
+    "axios": "^1.9.0",
     "chart.js": "latest",
     "lucide-react": "^0.441.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-hook-form": "^7.53.0",
+    "react-hook-form": "^7.56.3",
     "react-i18next": "^15.4.0",
     "react-redux": "^9.2.0",
-    "react-toastify": "^10.0.5",
+    "react-router-dom": "^7.6.0",
+    "react-toastify": "^10.0.6",
     "recharts": "^2.12.7"
   },
   "devDependencies": {
@@ -35,7 +36,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.1",
     "postcss": "latest",
-    "tailwindcss": "3.4.17",
+    "tailwindcss": "^3.4.17",
     "typescript": "^5.5.4",
     "vite": "^6.3.5"
   }

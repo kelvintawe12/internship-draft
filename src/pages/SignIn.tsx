@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import { EyeIcon, EyeOffIcon, LockIcon, UserIcon } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import Spinner from '../components/Spinner';
+import axios from 'axios';
 
 interface SignInForm {
   email: string;
@@ -17,6 +18,7 @@ const SignIn: React.FC = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
 
   const {
     register,
@@ -30,12 +32,27 @@ const SignIn: React.FC = () => {
     },
   });
 
-  // Redirect authenticated users to dashboard
+  // Redirect authenticated users
   useEffect(() => {
     if (isAuthenticated) {
       navigate(isAdmin ? '/dashboard' : '/order', { replace: true });
     }
   }, [isAuthenticated, isAdmin, navigate]);
+
+  const handleResendVerification = async (email: string) => {
+    setIsLoading(true);
+    try {
+      await axios.post('/api/send-verification-email', { email });
+      toast.success('Verification email resent! Please check your inbox.', { theme: 'light' });
+      setResendSent(true);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to resend verification email.', {
+        theme: 'light',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const onSubmit: SubmitHandler<SignInForm> = async (data) => {
     setIsLoading(true);
@@ -44,7 +61,14 @@ const SignIn: React.FC = () => {
       toast.success('Signed in successfully!', { theme: 'light' });
       navigate(isAdmin ? '/dashboard' : '/order');
     } catch (error: any) {
-      toast.error(error.message || 'Sign in failed. Please try again.', { theme: 'light' });
+      if (error.response?.data?.message === 'Email not verified') {
+        toast.error('Please verify your email before signing in.', { theme: 'light' });
+        setTimeout(() => handleResendVerification(data.email), 1000); // Auto-resend
+      } else {
+        toast.error(error.response?.data?.message || 'Sign in failed. Please try again.', {
+          theme: 'light',
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -78,7 +102,7 @@ const SignIn: React.FC = () => {
               })}
               className="w-full border border-gray-300 rounded-md p-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition"
               aria-invalid={errors.email ? 'true' : 'false'}
-              placeholder="yourname@domain.rw"
+              placeholder="email2example.com"
             />
             {errors.email && (
               <p className="text-xs text-red-500 mt-1" role="alert">
@@ -157,6 +181,11 @@ const SignIn: React.FC = () => {
             Sign Up
           </Link>
         </p>
+        {resendSent && (
+          <p className="mt-2 text-center text-sm text-green-600">
+            Verification email sent! Check your inbox.
+          </p>
+        )}
       </div>
     </div>
   );

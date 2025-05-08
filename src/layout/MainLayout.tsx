@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import Navbar from './Navbar';
-import Spinner from './Spinner';
+import { motion } from 'framer-motion';
+import Navbar from '../components/Navbar';
+import Spinner from '../components/Spinner';
 
 const Footer: React.FC = () => {
   return (
@@ -22,7 +23,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     setLoading(true);
     const timer = setTimeout(() => {
       setLoading(false);
-    }, 500); // simulate loading delay for page navigation
+    }, 500); // Simulate loading delay for page navigation
     return () => clearTimeout(timer);
   }, [location]);
 
@@ -30,9 +31,14 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     <div className="flex flex-col min-h-screen bg-white text-black">
       <Navbar />
       {loading && <Spinner loading={true} variant="fullscreen" />}
-      <main className="flex-grow max-w-7xl mx-auto w-full p-4 md:p-6">
+      <motion.main
+        className="flex-grow max-w-7xl mx-auto w-full p-4 md:p-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+      >
         {children}
-      </main>
+      </motion.main>
       <Footer />
     </div>
   );

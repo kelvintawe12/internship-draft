@@ -1,36 +1,39 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 
 interface OrderItem {
-  productId: string;
+  name: string;
   quantity: number;
+  price: number;
 }
 
-interface OrderState {
+interface Order {
+  id: string;
+  date: string;
+  total: number;
+  status: 'pending' | 'shipped' | 'delivered';
   items: OrderItem[];
 }
 
+interface OrderState {
+  orders: Order[];
+}
+
 const initialState: OrderState = {
-  items: [],
+  orders: [],
 };
 
 const orderSlice = createSlice({
   name: 'order',
   initialState,
   reducers: {
-    addToOrder: (state, action: PayloadAction<OrderItem>) => {
-      const { productId, quantity } = action.payload;
-      const existingItem = state.items.find((item) => item.productId === productId);
-      if (existingItem) {
-        existingItem.quantity += quantity;
-      } else {
-        state.items.push({ productId, quantity });
-      }
+    setOrders(state, action) {
+      state.orders = action.payload;
     },
-    clearOrder: (state) => {
-      state.items = [];
+    addToOrder(state, action) {
+      console.log('Add to order:', action.payload);
     },
   },
 });
 
-export const { addToOrder, clearOrder } = orderSlice.actions;
+export const { setOrders, addToOrder } = orderSlice.actions;
 export default orderSlice.reducer;

@@ -6,7 +6,6 @@ import { useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
 import { AuthContext } from '../context/AuthContext';
 import { addToOrder } from '../store/orderSlice';
-import Navbar from '../components/Navbar';
 import Spinner from '../components/Spinner';
 import { Product } from '../types/product';
 
@@ -309,9 +308,6 @@ const Products: React.FC = () => {
       {/* Spinner for initial load */}
       {isLoading && <Spinner loading={true} variant="fullscreen" />}
 
-      {/* Navbar */}
-      <Navbar />
-
       {/* Main Content */}
       <main className="flex-1 pt-16">
         <HeroSection />
@@ -335,7 +331,6 @@ const Products: React.FC = () => {
             )}
           </div>
         </section>
-        <Footer />
       </main>
     </div>
   );

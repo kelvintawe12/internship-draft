@@ -1,5 +1,4 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import axios from 'axios';
 import { toast } from 'react-toastify';
 
 interface User {
@@ -14,69 +13,74 @@ interface AuthContextType {
   isAdmin: boolean;
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string, rememberMe: boolean) => Promise<void>;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   isAdmin: false,
   user: null,
-  loading: false,
+  loading: true,
   login: async () => {},
-  logout: () => {},
+  logout: async () => {},
 });
 
-interface AuthProviderProps {
+interface AuthContextProviderProps {
   children: ReactNode;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check for stored token on mount
   useEffect(() => {
-    const initializeAuth = async () => {
-      const token = localStorage.getItem('authToken');
-      if (token) {
-        try {
-          // Mock API call to verify token
-          const response = await axios.get('/api/auth/verify', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          setUser(response.data.user);
-          setIsAuthenticated(true);
-          setIsAdmin(response.data.user.role === 'admin');
-        } catch (error) {
-          localStorage.removeItem('authToken');
-          toast.error('Session expired. Please sign in again.');
-        }
-      }
-      setLoading(false);
-    };
-    initializeAuth();
+    // Check for existing auth token in localStorage on mount
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      // Mock: Simulate fetching user data
+      const mockUser: User = {
+        id: 'user123',
+        name: 'User Name',
+        email: 'user@example.com',
+        role: localStorage.getItem('userRole') === 'admin' ? 'admin' : 'user',
+      };
+      setUser(mockUser);
+      setIsAuthenticated(true);
+      setIsAdmin(mockUser.role === 'admin');
+    }
+    setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string, rememberMe: boolean) => {
+  const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // Mock API call to login
-      const response = await axios.post('/api/login', { email, password });
-      const { token, user } = response.data;
-      setUser(user);
-      setIsAuthenticated(true);
-      setIsAdmin(user.role === 'admin');
-      if (rememberMe) {
-        localStorage.setItem('authToken', token);
+      // Mock API call
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Login failed');
       }
-      toast.success(`Welcome, ${user.name}!`);
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Login failed. Please try again.';
-      toast.error(message);
-      throw new Error(message);
+
+      const data = await response.json();
+      const { user: userData, token } = data;
+
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('userRole', userData.role);
+
+      setUser(userData);
+      setIsAuthenticated(true);
+      setIsAdmin(userData.role === 'admin');
+      toast.success('Logged in successfully!', { theme: 'light' });
+    } catch (error) {
+      toast.error('Invalid email or password.', { theme: 'light' });
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -85,25 +89,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     setLoading(true);
     try {
-      // Mock API call to logout
-      await axios.post('/api/logout', {}, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
+      // Mock API call
+      await fetch('/api/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
       });
+
       localStorage.removeItem('authToken');
+      localStorage.removeItem('userRole');
+
       setUser(null);
       setIsAuthenticated(false);
       setIsAdmin(false);
-      toast.success('Logged out successfully.');
+      toast.success('Logged out successfully!', { theme: 'light' });
     } catch (error) {
-      toast.error('Logout failed. Please try again.');
+      toast.error('Failed to log out.', { theme: 'light' });
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <AuthContext.Provider value={{ isAuthenticated, isAdmin, user, loading, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value: AuthContextType = {
+    isAuthenticated,
+    isAdmin,
+    user,
+    loading,
+    login,
+    logout,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
