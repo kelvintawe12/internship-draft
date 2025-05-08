@@ -1,10 +1,10 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useEffect, useContext } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
-import { EyeIcon, EyeOffIcon, LockIcon, UserIcon } from 'lucide-react';
+import { Lock, Mail, User } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
-import Spinner from '../components/Spinner';
 import axios from 'axios';
 
 interface SignUpForm {
@@ -12,110 +12,80 @@ interface SignUpForm {
   email: string;
   password: string;
   confirmPassword: string;
-  terms: boolean;
 }
 
 const SignUp: React.FC = () => {
-  const { isAuthenticated, isAdmin } = useContext(AuthContext);
+  const { isAuthenticated, loading } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-
   const {
     register,
     handleSubmit,
     formState: { errors },
     watch,
-  } = useForm<SignUpForm>({
-    defaultValues: {
-      name: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      terms: false,
-    },
-  });
+    reset,
+  } = useForm<SignUpForm>({ defaultValues: { name: '', email: '', password: '', confirmPassword: '' } });
 
-  // Watch password for confirmPassword validation
-  const password = watch('password');
-
-  // Redirect authenticated users
   useEffect(() => {
     if (isAuthenticated) {
-      navigate(isAdmin ? '/dashboard' : '/order', { replace: true });
+      navigate('/');
     }
-  }, [isAuthenticated, isAdmin, navigate]);
+  }, [isAuthenticated, navigate]);
 
   const onSubmit: SubmitHandler<SignUpForm> = async (data) => {
-    setIsLoading(true);
     try {
-      // Mock API call for signup
-      await axios.post('/api/signup', {
+      const response = await axios.post('/api/signup', {
         name: data.name,
         email: data.email,
         password: data.password,
       });
 
-      // Send verification email
-      await axios.post('/api/send-verification-email', { email: data.email });
-      toast.success('Account created! Please check your email to verify your account.', {
+      if (!response.ok) {
+        throw new Error('Signup failed');
+      }
+
+      toast.success('Sign up successful! Please check your email to verify your account.', {
         theme: 'light',
       });
-      setIsSubmitted(true);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Sign up failed. Please try again.', {
-        theme: 'light',
-      });
-    } finally {
-      setIsLoading(false);
+      reset();
+      navigate('/signin');
+    } catch (error) {
+      toast.error('Failed to sign up. Please try again.', { theme: 'light' });
     }
   };
 
+  const password = watch('password');
+
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4">
-      <div className="max-w-md w-full bg-white shadow-md rounded-lg p-8 border border-gray-200">
-        {/* Text-based Logo */}
-        <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-indigo-600">Mount Meru SoyCo</h1>
-          <p className="text-sm text-gray-500">Quality Cooking Oils</p>
-        </div>
-        <h2 className="text-2xl font-bold text-gray-800 text-center mb-6">
-          {isSubmitted ? 'Check Your Email' : 'Create an Account'}
-        </h2>
-        {isSubmitted ? (
-          <div className="text-center space-y-4">
-            <p className="text-gray-600">
-              We've sent a verification link to your email. Please check your inbox and follow the instructions to activate your account.
-            </p>
-            <Link
-              to="/signin"
-              className="inline-block bg-indigo-600 text-white rounded-md py-3 px-6 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition"
-              aria-label="Back to Sign In"
-            >
-              Back to Sign In
-            </Link>
-          </div>
-        ) : (
+    <motion.section
+      className="py-16 bg-gray-100 min-h-screen flex items-center justify-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="max-w-md w-full mx-auto px-4">
+        <motion.div
+          className="bg-white shadow-md rounded-lg p-8"
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Create an Account</h2>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
-              <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                <UserIcon size={16} className="mr-2 text-indigo-600" />
-                Full Name
+              <label htmlFor="name" className="sr-only">
+                Name
               </label>
-              <input
-                type="text"
-                {...register('name', {
-                  required: 'Full name is required',
-                  minLength: {
-                    value: 2,
-                    message: 'Name must be at least 2 characters long',
-                  },
-                })}
-                className="w-full border border-gray-300 rounded-md p-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition"
-                aria-invalid={errors.name ? 'true' : 'false'}
-                placeholder="John Doe"
-              />
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-indigo-600" size={20} />
+                <input
+                  id="name"
+                  type="text"
+                  {...register('name', { required: 'Name is required' })}
+                  className="w-full border border-gray-300 rounded-lg pl-10 p-3 focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Full Name"
+                  aria-invalid={errors.name ? 'true' : 'false'}
+                />
+              </div>
               {errors.name && (
                 <p className="text-xs text-red-500 mt-1" role="alert">
                   {errors.name.message}
@@ -123,23 +93,26 @@ const SignUp: React.FC = () => {
               )}
             </div>
             <div>
-              <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                <UserIcon size={16} className="mr-2 text-indigo-600" />
+              <label htmlFor="email" className="sr-only">
                 Email Address
               </label>
-              <input
-                type="email"
-                {...register('email', {
-                  required: 'Email is required',
-                  pattern: {
-                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: 'Please enter a valid email address',
-                  },
-                })}
-                className="w-full border border-gray-300 rounded-md p-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition"
-                aria-invalid={errors.email ? 'true' : 'false'}
-                placeholder="email@example.com"
-              />
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-indigo-600" size={20} />
+                <input
+                  id="email"
+                  type="email"
+                  {...register('email', {
+                    required: 'Email is required',
+                    pattern: {
+                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                      message: 'Invalid email address',
+                    },
+                  })}
+                  className="w-full border border-gray-300 rounded-lg pl-10 p-3 focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Email Address"
+                  aria-invalid={errors.email ? 'true' : 'false'}
+                />
+              </div>
               {errors.email && (
                 <p className="text-xs text-red-500 mt-1" role="alert">
                   {errors.email.message}
@@ -147,36 +120,22 @@ const SignUp: React.FC = () => {
               )}
             </div>
             <div>
-              <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                <LockIcon size={16} className="mr-2 text-indigo-600" />
+              <label htmlFor="password" className="sr-only">
                 Password
               </label>
               <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-indigo-600" size={20} />
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  type="password"
                   {...register('password', {
                     required: 'Password is required',
-                    minLength: {
-                      value: 8,
-                      message: 'Password must be at least 8 characters long',
-                    },
-                    pattern: {
-                      value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/,
-                      message: 'Password must include uppercase, lowercase, and a number',
-                    },
+                    minLength: { value: 6, message: 'Password must be at least 6 characters' },
                   })}
-                  className="w-full border border-gray-300 rounded-md p-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition"
+                  className="w-full border border-gray-300 rounded-lg pl-10 p-3 focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Password"
                   aria-invalid={errors.password ? 'true' : 'false'}
-                  placeholder="********"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-indigo-600 focus:outline-none"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOffIcon size={20} /> : <EyeIcon size={20} />}
-                </button>
               </div>
               {errors.password && (
                 <p className="text-xs text-red-500 mt-1" role="alert">
@@ -185,69 +144,49 @@ const SignUp: React.FC = () => {
               )}
             </div>
             <div>
-              <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                <LockIcon size={16} className="mr-2 text-indigo-600" />
+              <label htmlFor="confirmPassword" className="sr-only">
                 Confirm Password
               </label>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                {...register('confirmPassword', {
-                  required: 'Please confirm your password',
-                  validate: (value) => value === password || 'Passwords do not match',
-                })}
-                className="w-full border border-gray-300 rounded-md p-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition"
-                aria-invalid={errors.confirmPassword ? 'true' : 'false'}
-                placeholder="********"
-              />
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-indigo-600" size={20} />
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  {...register('confirmPassword', {
+                    required: 'Please confirm your password',
+                    validate: (value) => value === password || 'Passwords do not match',
+                  })}
+                  className="w-full border border-gray-300 rounded-lg pl-10 p-3 focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Confirm Password"
+                  aria-invalid={errors.confirmPassword ? 'true' : 'false'}
+                />
+              </div>
               {errors.confirmPassword && (
                 <p className="text-xs text-red-500 mt-1" role="alert">
                   {errors.confirmPassword.message}
                 </p>
               )}
             </div>
-            <div>
-              <label className="flex items-center space-x-2 text-sm text-gray-700">
-                <input
-                  type="checkbox"
-                  {...register('terms', {
-                    required: 'You must agree to the terms and conditions',
-                  })}
-                  className="border-gray-300 rounded focus:ring-indigo-600"
-                />
-                <span>
-                  I agree to the{' '}
-                  <Link to="/terms" className="text-indigo-600 hover:text-indigo-700 underline">
-                    Terms and Conditions
-                  </Link>
-                </span>
-              </label>
-              {errors.terms && (
-                <p className="text-xs text-red-500 mt-1" role="alert">
-                  {errors.terms.message}
-                </p>
-              )}
-            </div>
-            <button
+            <motion.button
               type="submit"
-              disabled={isLoading}
-              className="w-full bg-indigo-600 text-white rounded-md py-3 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-600 disabled:opacity-50 flex items-center justify-center transition"
+              disabled={loading}
+              className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               aria-label="Sign Up"
             >
-              {isLoading && <Spinner loading={true} variant="inline" />}
-              Sign Up
-            </button>
+              {loading ? 'Signing Up...' : 'Sign Up'}
+            </motion.button>
           </form>
-        )}
-        {!isSubmitted && (
-          <p className="mt-4 text-center text-sm text-gray-600">
+          <p className="text-center text-gray-600 mt-6">
             Already have an account?{' '}
-            <Link to="/signin" className="text-indigo-600 hover:text-indigo-700 underline">
+            <Link to="/signin" className="text-indigo-600 hover:underline" aria-label="Sign In">
               Sign In
             </Link>
           </p>
-        )}
+        </motion.div>
       </div>
-    </div>
+    </motion.section>
   );
 };
 

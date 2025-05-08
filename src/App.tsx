@@ -1,8 +1,6 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import store from './store';
 import MainLayout from './layout/MainLayout';
 import { AuthContextProvider } from './context/AuthContext';
@@ -22,22 +20,21 @@ const App: React.FC = () => {
   return (
     <Provider store={store}>
       <AuthContextProvider>
-        <MainLayout>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/order" element={<Order />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="/signin" element={<SignIn />} />
-            <Route path="/verify-email" element={<VerifyEmail />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </MainLayout>
-        <ToastContainer theme="light" position="top-right" autoClose={3000} />
+          <MainLayout>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/order" element={<Order />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/signin" element={<SignIn />} />
+              <Route path="/verify-email/:token" element={<VerifyEmail />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </MainLayout>
       </AuthContextProvider>
     </Provider>
   );
