@@ -7,9 +7,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import {
   Menu, X, User, Bell, CreditCard, MessageSquare, Lock, HelpCircle, Search, Sun, Moon, Plus,
-  ChevronDown, ChevronRight, LogOut, UserCircle
+  ChevronDown, ChevronRight, LogOut, UserCircle, Activity as ActivityIcon
 } from 'lucide-react';
-import { Activity as ActivityIcon } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
 import { RootState } from '../../store';
 import { setPreferences } from '../../store/dashboardSlice';
@@ -18,11 +17,11 @@ import ErrorBoundary from '../ErrorBoundary';
 // Lazy-loaded components
 const Profile = lazy(() => import('./Profile'));
 const Notifications = lazy(() => import('./Notifications'));
-const Billing = lazy(() => import('./UserBilling'));
-const Activity = lazy(() => import('./UserActivity'));
-const Support = lazy(() => import('./UserSupport'));
-const Security = lazy(() => import('./UserSecurity'));
-const Messages = lazy(() => import('./UserMessages'));
+const UserBilling = lazy(() => import('./UserBilling'));
+const UserActivity = lazy(() => import('./UserActivity'));
+const UserSupport = lazy(() => import('./UserSupport'));
+const UserSecurity = lazy(() => import('./UserSecurity'));
+const UserMessages = lazy(() => import('./UserMessages'));
 
 interface Preferences {
   theme: 'light' | 'dark';
@@ -61,12 +60,7 @@ interface Activity {
   id: string;
   description: string;
   date: string;
-}
-
-interface ActivityData {
-  id: string;
-  description: string;
-  date: string;
+  type: 'login' | 'update' | 'comment';
 }
 
 interface Ticket {
@@ -99,6 +93,12 @@ const fetchDashboardStats = async () => {
     invoicesResponse.json(),
     ticketsResponse.json(),
   ]);
+};
+
+const fetchActivities = async (page: number, filter: string) => {
+  const response = await fetch(`/api/user/activity?page=${page}${filter ? `&type=${filter}` : ''}`);
+  if (!response.ok) throw new Error('Failed to fetch activities');
+  return response.json();
 };
 
 const searchDashboard = async (query: string) => {
@@ -136,19 +136,28 @@ const UserDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children
   const [widgetOrder, setWidgetOrder] = useState<string[]>(preferences.widgetOrder || [
     'stats', 'activity', 'performance'
   ]);
+  const [activityPage, setActivityPage] = useState(1);
+  const [activityFilter, setActivityFilter] = useState('');
 
   const { data: statsData, isLoading: isStatsLoading } = useQuery({
     queryKey: ['dashboardStats'],
     queryFn: fetchDashboardStats,
     enabled: isAuthenticated,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: activityData, isLoading: isActivitiesLoading } = useQuery({
+    queryKey: ['activities', activityPage, activityFilter],
+    queryFn: () => fetchActivities(activityPage, activityFilter),
+    enabled: isAuthenticated,
+    staleTime: 60 * 1000,
   });
 
   const { data: searchResults, isFetching: isSearching } = useQuery({
     queryKey: ['dashboardSearch', searchQuery],
     queryFn: () => searchDashboard(searchQuery),
     enabled: !!searchQuery,
-    staleTime: 60 * 1000, // Cache search results for 1 minute
+    staleTime: 60 * 1000,
   });
 
   const updatePreferencesMutation = useMutation({
@@ -187,14 +196,14 @@ const UserDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const sections = [
-    { id: 'dashboard', label: 'Dashboard', icon: <span className="w-4 h-4"><Activity /></span>, component: null },
+    { id: 'dashboard', label: 'Dashboard', icon: <ActivityIcon className="w-4 h-4" />, component: null },
     { id: 'profile', label: 'Profile', icon: <User className="w-4 h-4" />, component: Profile },
     { id: 'notifications', label: 'Notifications', icon: <Bell className="w-4 h-4" />, component: Notifications },
-    { id: 'activity', label: 'Activity', icon: <ActivityIcon className="w-4 h-4" />, component: Activity },
-    { id: 'messages', label: 'Messages', icon: <MessageSquare className="w-4 h-4" />, component: Messages },
-    { id: 'security', label: 'Security', icon: <Lock className="w-4 h-4" />, component: Security },
-    { id: 'billing', label: 'Billing', icon: <CreditCard className="w-4 h-4" />, component: Billing },
-    { id: 'support', label: 'Support', icon: <HelpCircle className="w-4 h-4" />, component: Support },
+    { id: 'activity', label: 'Activity', icon: <ActivityIcon className="w-4 h-4" />, component: UserActivity },
+    { id: 'messages', label: 'Messages', icon: <MessageSquare className="w-4 h-4" />, component: UserMessages },
+    { id: 'security', label: 'Security', icon: <Lock className="w-4 h-4" />, component: UserSecurity },
+    { id: 'billing', label: 'Billing', icon: <CreditCard className="w-4 h-4" />, component: UserBilling },
+    { id: 'support', label: 'Support', icon: <HelpCircle className="w-4 h-4" />, component: UserSupport },
   ];
 
   const StatsWidget = () => (
@@ -227,25 +236,57 @@ const UserDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children
       animate={{ opacity: 1 }}
       className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border dark:border-gray-700 lg:col-span-2"
     >
-      <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">Recent Activity</h3>
-      {isStatsLoading ? (
-        <p className="text-xs text-gray-500 dark:text-gray-400">Loading activities...</p>
-      ) : activities.length === 0 ? (
-        <p className="text-xs text-gray-500 dark:text-gray-400">No recent activities.</p>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Recent Activity</h3>
+        <select
+          value={activityFilter}
+          onChange={(e) => setActivityFilter(e.target.value)}
+          className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md p-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          aria-label="Filter activities"
+        >
+          <option value="">All Types</option>
+          <option value="login">Login</option>
+          <option value="update">Update</option>
+          <option value="comment">Comment</option>
+        </select>
+      </div>
+      {isActivitiesLoading ? (
+        <p className="text-xs text-gray-600 dark:text-gray-400">Loading activities...</p>
+      ) : !activityData || activityData.length === 0 ? (
+        <p className="text-xs text-gray-600 dark:text-gray-400">No recent activities.</p>
       ) : (
         <ul className="space-y-2">
-          {activities.slice(0, 3).map((activity) => (
-            <li key={activity.id} className="flex items-center space-x-2">
+          {activityData.slice(0, 5).map((activity: Activity) => (
+            <li key={activity.id} className="flex items-start space-x-3">
               <div className="h-6 w-6 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
                 <User className="h-3 w-3 text-indigo-600 dark:text-indigo-400" />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-xs font-medium text-gray-800 dark:text-gray-100">{activity.description}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(activity.date).toLocaleString()}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {new Date(activity.date).toLocaleString('en-US', {
+                    month: 'numeric',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true,
+                  })}
+                </p>
               </div>
             </li>
           ))}
         </ul>
+      )}
+      {activityData && activityData.length >= 5 && (
+        <button
+          onClick={() => setActivityPage(activityPage + 1)}
+          className="mt-4 w-full text-center text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
+          aria-label="Load more activities"
+        >
+          Load More
+        </button>
       )}
     </motion.div>
   );
@@ -270,7 +311,7 @@ const UserDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <div className={`flex h-screen ${preferences.theme === 'dark' ? 'dark bg-gray-900' : 'bg-gray-50'} text-gray-900 dark:text-gray-100`}>
+    <div className={`flex min-h-screen ${preferences.theme === 'dark' ? 'dark bg-gray-900' : 'bg-gray-50'} text-gray-900 dark:text-gray-100`}>
       {/* Sidebar */}
       <motion.aside
         initial={{ x: -224 }}
@@ -321,7 +362,7 @@ const UserDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children
         <motion.header
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 py-2 z-20 shadow-sm"
+          className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 py-3 z-20 shadow-sm"
         >
           <div className="flex items-center space-x-3">
             <button
@@ -331,7 +372,9 @@ const UserDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children
             >
               {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
-            <h1 className="text-base font-semibold text-gray-800 dark:text-gray-100 hidden md:block">User Dashboard</h1>
+            <h1 className="text-base font-semibold text-gray-800 dark:text-gray-100 hidden md:block">
+              {user ? `Welcome, ${user.name}` : 'User Dashboard'}
+            </h1>
             <div className="relative hidden sm:block">
               <input
                 type="text"
@@ -431,8 +474,8 @@ const UserDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children
         </motion.header>
 
         {/* Main Content */}
-        <main className="flex-1 pt-12">
-          <div className="h-full max-w-6xl mx-auto px-4 sm:px-6">
+        <main className="flex-1 pt-16 pb-6 overflow-y-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {activeSection === 'dashboard' ? (
               <DragDropContext onDragEnd={handleDragEnd}>
                 <Droppable droppableId="widgets">
@@ -440,7 +483,7 @@ const UserDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children
                     <div
                       {...provided.droppableProps}
                       ref={provided.innerRef}
-                      className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 h-full"
+                      className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
                     >
                       {widgetOrder.map((widgetId, index) => {
                         const Widget = widgets[widgetId as keyof typeof widgets].component;
@@ -451,6 +494,7 @@ const UserDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
+                                className="min-h-[200px]"
                               >
                                 <ErrorBoundary>
                                   <Widget />
@@ -471,7 +515,7 @@ const UserDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children
                   {sections.find(s => s.id === activeSection)?.component ? (
                     React.createElement(sections.find(s => s.id === activeSection)!.component!)
                   ) : (
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border dark:border-gray-700 h-full">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border dark:border-gray-700 min-h-[calc(100vh-4rem)]">
                       {children}
                     </div>
                   )}
