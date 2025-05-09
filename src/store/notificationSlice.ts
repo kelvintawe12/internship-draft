@@ -1,4 +1,3 @@
-// src/store/notificationSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface Notification {
@@ -6,6 +5,8 @@ interface Notification {
   message: string;
   date: string;
   read: boolean;
+  type: 'info' | 'warning' | 'error';
+  priority: 'low' | 'medium' | 'high';
 }
 
 interface NotificationState {
@@ -24,14 +25,16 @@ const notificationSlice = createSlice({
       state.notifications = action.payload;
     },
     updateNotification(state, action: PayloadAction<{ id: string; read: boolean }>) {
-      const { id, read } = action.payload;
-      const notification = state.notifications.find((n) => n.id === id);
-      if (notification) {
-        notification.read = read;
+      const index = state.notifications.findIndex((n) => n.id === action.payload.id);
+      if (index !== -1) {
+        state.notifications[index].read = action.payload.read;
       }
+    },
+    clearNotifications(state) {
+      state.notifications = [];
     },
   },
 });
 
-export const { setNotifications, updateNotification } = notificationSlice.actions;
+export const { setNotifications, updateNotification, clearNotifications } = notificationSlice.actions;
 export default notificationSlice.reducer;
