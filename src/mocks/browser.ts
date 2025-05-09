@@ -358,7 +358,9 @@ const worker = setupWorker(
     interface TwoFactorRequestBody {
       enabled: boolean;
     }
+
     const { enabled } = (await request.json()) as TwoFactorRequestBody;
+
     return HttpResponse.json({ twoFactorEnabled: enabled }, { status: 200 });
   }),
 
@@ -367,7 +369,9 @@ const worker = setupWorker(
     interface LoginAlertsRequestBody {
       enabled: boolean;
     }
+
     const { enabled } = (await request.json()) as LoginAlertsRequestBody;
+
     return HttpResponse.json({ loginAlertsEnabled: enabled }, { status: 200 });
   }),
 
@@ -563,7 +567,9 @@ const worker = setupWorker(
       subject: string;
       description: string;
     }
+
     const { subject, description } = (await request.json()) as SupportTicketRequestBody;
+
     return HttpResponse.json(
       {
         id: `TCK${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
@@ -655,12 +661,14 @@ const worker = setupWorker(
 
   // Handler for POST /api/user/messages
   http.post('/api/user/messages', async ({ request }) => {
-    interface MessageRequestBody {
+    interface UserMessageRequestBody {
       recipientType: string;
       subject: string;
       content: string;
     }
-    const { recipientType, subject, content } = (await request.json()) as MessageRequestBody;
+
+    const { recipientType, subject, content } = (await request.json()) as UserMessageRequestBody;
+
     return HttpResponse.json(
       {
         id: `MSG${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
@@ -672,6 +680,95 @@ const worker = setupWorker(
       },
       { status: 201 }
     );
+  }),
+
+  // Handler for POST /api/error-log
+  http.post('/api/error-log', async ({ request }) => {
+    interface ErrorLogRequestBody {
+      message: string;
+      stack: string;
+      componentStack?: string;
+      userId: string;
+      role: string;
+    }
+
+    const { message, stack, componentStack, userId, role } = (await request.json()) as ErrorLogRequestBody;
+
+    console.log('Error logged:', { message, stack, componentStack, userId, role });
+
+    return HttpResponse.json(
+      {
+        id: `ERR${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
+        message,
+        stack,
+        componentStack,
+        userId,
+        role,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 201 }
+    );
+  }),
+
+  // Handler for GET /api/user/preferences
+  http.get('/api/user/preferences', () => {
+    return HttpResponse.json({
+      theme: 'light',
+      widgetOrder: ['stats', 'activity', 'performance'],
+    });
+  }),
+
+  // Handler for PUT /api/user/preferences
+  http.put('/api/user/preferences', async ({ request }) => {
+    const data = await request.json();
+    return HttpResponse.json(data, { status: 200 });
+  }),
+
+  // Handler for GET /api/dashboard/search
+  http.get('/api/dashboard/search', ({ request }) => {
+    const url = new URL(request.url);
+    const query = url.searchParams.get('query')?.toLowerCase() || '';
+
+    const searchResults = [
+      {
+        type: 'order',
+        id: '1',
+        title: 'Order #1',
+        description: `Laptop order for 999,999 RWF, pending`,
+      },
+      {
+        type: 'notification',
+        id: '3',
+        title: 'Payment Pending',
+        description: 'Payment of 999,999 RWF is pending.',
+      },
+      {
+        type: 'invoice',
+        id: 'INV001',
+        title: 'Invoice #INV001',
+        description: `Pending invoice for 999,999 RWF`,
+      },
+      {
+        type: 'activity',
+        id: '1',
+        title: 'Login Activity',
+        description: 'Logged in from Chrome on Windows',
+      },
+      {
+        type: 'ticket',
+        id: 'TCK001',
+        title: 'Ticket #TCK001',
+        description: 'Issue with payment processing',
+      },
+      {
+        type: 'message',
+        id: 'MSG001',
+        title: 'Welcome Message',
+        description: 'Welcome to Our Platform from support@company.com',
+      },
+    ].filter((result) => result.title.toLowerCase().includes(query) || result.description.toLowerCase().includes(query));
+
+    return HttpResponse.json(searchResults);
   })
 );
 

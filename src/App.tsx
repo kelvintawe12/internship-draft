@@ -1,7 +1,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
-import store from './store';
+import { store } from './store';
 import MainLayout from './layout/MainLayout';
 import { AuthProvider } from './context/AuthContext';
 import Home from './pages/Home';

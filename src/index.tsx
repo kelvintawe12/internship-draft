@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import 'react-toastify/dist/ReactToastify.css';
 import App from './App';
 import './index.css';
-import store from './store';
+import { store } from './store';
 import { AuthProvider } from './context/AuthContext';
 
 if (process.env.NODE_ENV === 'development') {

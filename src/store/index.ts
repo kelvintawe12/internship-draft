@@ -1,26 +1,27 @@
 import { configureStore } from '@reduxjs/toolkit';
-import orderReducer from './orderSlice';
 import notificationReducer from './notificationSlice';
-import userReducer from './userSlice';
+import orderReducer from './orderSlice';
 import securityReducer from './securitySlice';
 import billingReducer from './billingSlice';
 import activityReducer from './activitySlice';
 import supportReducer from './supportSlice';
-import messageReducer from './messageSlice'; // Added missing import
+import messageReducer from './messageSlice';
+import errorReducer from './errorSlice';
+import dashboardReducer from './dashboardSlice';
 
 export const store = configureStore({
   reducer: {
-    order: orderReducer,
     notification: notificationReducer,
-    user: userReducer,
+    order: orderReducer,
     security: securityReducer,
     billing: billingReducer,
     activity: activityReducer,
     support: supportReducer,
-    message: messageReducer, // Added missing reducer
+    message: messageReducer,
+    error: errorReducer,
+    dashboard: dashboardReducer,
   },
 });
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
-export default store;

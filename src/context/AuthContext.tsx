@@ -5,31 +5,32 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: 'user' | 'admin';
+  avatar?: string; // Optional property for the user's avatar
+  role: 'admin' | 'user';
 }
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  isAdmin: boolean;
   user: User | null;
   loading: boolean;
-  signup: (name: string, email: string, password: string, role: 'user' | 'admin') => Promise<void>;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  signup: (name: string, email: string, password: string, role: 'user' | 'admin') => Promise<void>;
   verifyEmail: (token: string) => Promise<void>;
-  forgotPassword: (email: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>; // Add this property
 }
 
 export const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
-  isAdmin: false,
   user: null,
-  loading: true,
-  signup: async () => {},
+  loading: false,
+  isAdmin: false,
   login: async () => {},
   logout: async () => {},
+  signup: async () => {},
   verifyEmail: async () => {},
-  forgotPassword: async () => {},
+  forgotPassword: async () => {}, // Add this property
 });
 
 interface AuthProviderProps {
@@ -38,7 +39,6 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -50,35 +50,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const parsedUser: User = JSON.parse(storedUser);
         setUser(parsedUser);
         setIsAuthenticated(true);
-        setIsAdmin(parsedUser.role === 'admin');
       }
     }
     setLoading(false);
   }, []);
-
-  const signup = async (name: string, email: string, password: string, role: 'user' | 'admin') => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role }),
-      });
-      if (!response.ok) throw new Error('Signup failed');
-      const data = await response.json();
-      localStorage.setItem('authToken', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      setUser(data.user);
-      setIsAuthenticated(true);
-      setIsAdmin(data.user.role === 'admin');
-      toast.success('Sign up successful! Please check your email to verify.', { theme: 'light' });
-    } catch (error) {
-      toast.error('Failed to sign up. Please try again.', { theme: 'light' });
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const login = async (email: string, password: string) => {
     setLoading(true);
@@ -94,7 +69,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(data.user));
       setUser(data.user);
       setIsAuthenticated(true);
-      setIsAdmin(data.user.role === 'admin');
       toast.success('Logged in successfully!', { theme: 'light' });
     } catch (error) {
       toast.error('Invalid email or password.', { theme: 'light' });
@@ -115,7 +89,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.removeItem('user');
       setUser(null);
       setIsAuthenticated(false);
-      setIsAdmin(false);
       toast.success('Logged out successfully!', { theme: 'light' });
     } catch (error) {
       toast.error('Failed to log out.', { theme: 'light' });
@@ -125,12 +98,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const signup = async (name: string, email: string, password: string, role: 'user' | 'admin') => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, role }),
+      });
+      if (!response.ok) throw new Error('Signup failed');
+      const data = await response.json();
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setUser(data.user);
+      setIsAuthenticated(true);
+      toast.success('Account created successfully!', { theme: 'light' });
+    } catch (error) {
+      toast.error('Failed to create account.', { theme: 'light' });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const verifyEmail = async (token: string) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/verify-email/${token}`, {
+      const response = await fetch('/api/verify-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
       });
       if (!response.ok) throw new Error('Email verification failed');
       toast.success('Email verified successfully!', { theme: 'light' });
@@ -150,10 +147,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-      if (!response.ok) throw new Error('Failed to send reset link');
-      toast.success('Password reset link sent to your email.', { theme: 'light' });
+      if (!response.ok) throw new Error('Password reset failed');
+      toast.success('Password reset email sent successfully!', { theme: 'light' });
     } catch (error) {
-      toast.error('Failed to send reset link.', { theme: 'light' });
+      toast.error('Failed to send password reset email.', { theme: 'light' });
       throw error;
     } finally {
       setLoading(false);
@@ -161,7 +158,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isAdmin, user, loading, signup, login, logout, verifyEmail, forgotPassword }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, loading, isAdmin: user?.role === 'admin', login, logout, signup, verifyEmail, forgotPassword }}>
       {children}
     </AuthContext.Provider>
   );
