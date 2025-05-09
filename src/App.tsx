@@ -15,26 +15,39 @@ import NotFound from './pages/NotFound';
 import SignUp from './pages/SignUp';
 import SignIn from './pages/SignIn';
 import VerifyEmail from './pages/VerifyEmail';
+import ProtectedRoute from './components/ProtectedRoute';
+import UserDashboardPage from './pages/UserDashboard';
+import DashboardRoutes from './routes/dashboardRoutes';
+import ErrorBoundary from './pages/UserDashboardLayout';
 
 const App: React.FC = () => {
   return (
     <Provider store={store}>
       <AuthContextProvider>
-          <MainLayout>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/products" element={<Products />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/order" element={<Order />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/signup" element={<SignUp />} />
-              <Route path="/signin" element={<SignIn />} />
-              <Route path="/verify-email/:token" element={<VerifyEmail />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </MainLayout>
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<MainLayout><Home /></MainLayout>} />
+            <Route path="/products" element={<MainLayout><Products /></MainLayout>} />
+            <Route path="/about" element={<MainLayout><About /></MainLayout>} />
+            <Route path="/contact" element={<MainLayout><Contact /></MainLayout>} />
+            <Route path="/order" element={<MainLayout><Order /></MainLayout>} />
+            <Route path="/terms" element={<MainLayout><Terms /></MainLayout>} />
+            <Route path="/forgot-password" element={<MainLayout><ForgotPassword /></MainLayout>} />
+            <Route path="/signup" element={<MainLayout><SignUp /></MainLayout>} />
+            <Route path="/signin" element={<MainLayout><SignIn /></MainLayout>} />
+            <Route path="/verify-email/:token" element={<MainLayout><VerifyEmail /></MainLayout>} />
+            <Route
+              path="/admin-dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardRoutes />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/dashboard" element={<UserDashboardPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </ErrorBoundary>
       </AuthContextProvider>
     </Provider>
   );

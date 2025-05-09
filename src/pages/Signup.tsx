@@ -12,6 +12,7 @@ interface SignUpForm {
   email: string;
   password: string;
   confirmPassword: string;
+  role: 'user' | 'admin';
 }
 
 const SignUp: React.FC = () => {
@@ -23,7 +24,7 @@ const SignUp: React.FC = () => {
     formState: { errors },
     watch,
     reset,
-  } = useForm<SignUpForm>({ defaultValues: { name: '', email: '', password: '', confirmPassword: '' } });
+  } = useForm<SignUpForm>({ defaultValues: { name: '', email: '', password: '', confirmPassword: '', role: 'user' } });
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -37,9 +38,10 @@ const SignUp: React.FC = () => {
         name: data.name,
         email: data.email,
         password: data.password,
+        role: data.role,
       });
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error('Signup failed');
       }
 
@@ -166,6 +168,19 @@ const SignUp: React.FC = () => {
                   {errors.confirmPassword.message}
                 </p>
               )}
+            </div>
+            <div>
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+                Select Role
+              </label>
+              <select
+                id="role"
+                {...register('role')}
+                className="w-full border border-gray-300 rounded-md p-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition"
+              >
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
             </div>
             <motion.button
               type="submit"

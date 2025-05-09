@@ -11,6 +11,7 @@ interface SignInForm {
   email: string;
   password: string;
   rememberMe: boolean;
+  role: 'user' | 'admin';
 }
 
 const SignIn: React.FC = () => {
@@ -29,10 +30,10 @@ const SignIn: React.FC = () => {
       email: '',
       password: '',
       rememberMe: false,
+      role: 'user',
     },
   });
 
-  // Redirect authenticated users
   useEffect(() => {
     if (isAuthenticated) {
       navigate(isAdmin ? '/dashboard' : '/order', { replace: true });
@@ -57,13 +58,13 @@ const SignIn: React.FC = () => {
   const onSubmit: SubmitHandler<SignInForm> = async (data) => {
     setIsLoading(true);
     try {
-      await login(data.email, data.password, data.rememberMe);
+      await login(data.email, data.password);
       toast.success('Signed in successfully!', { theme: 'light' });
-      navigate(isAdmin ? '/dashboard' : '/order');
+      navigate(data.role === 'admin' ? '/dashboard' : '/order');
     } catch (error: any) {
       if (error.response?.data?.message === 'Email not verified') {
         toast.error('Please verify your email before signing in.', { theme: 'light' });
-        setTimeout(() => handleResendVerification(data.email), 1000); // Auto-resend
+        setTimeout(() => handleResendVerification(data.email), 1000);
       } else {
         toast.error(error.response?.data?.message || 'Sign in failed. Please try again.', {
           theme: 'light',
@@ -77,7 +78,6 @@ const SignIn: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4">
       <div className="max-w-md w-full bg-white shadow-md rounded-lg p-8 border border-gray-200">
-        {/* Text-based Logo */}
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-indigo-600">Mount Meru SoyCo</h1>
           <p className="text-sm text-gray-500">Quality Cooking Oils</p>
@@ -102,7 +102,7 @@ const SignIn: React.FC = () => {
               })}
               className="w-full border border-gray-300 rounded-md p-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition"
               aria-invalid={errors.email ? 'true' : 'false'}
-              placeholder="email2example.com"
+              placeholder="email@example.com"
             />
             {errors.email && (
               <p className="text-xs text-red-500 mt-1" role="alert">
@@ -147,6 +147,19 @@ const SignIn: React.FC = () => {
                 {errors.password.message}
               </p>
             )}
+          </div>
+          <div>
+            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+              Select Role
+            </label>
+            <select
+              id="role"
+              {...register('role')}
+              className="w-full border border-gray-300 rounded-md p-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition"
+            >
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
           </div>
           <div className="flex justify-between items-center">
             <label className="flex items-center space-x-2 text-sm text-gray-700">

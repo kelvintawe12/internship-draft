@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronDownIcon, PackageIcon } from 'lucide-react';
+import { ChevronDownIcon } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { AuthContext } from '../context/AuthContext';
 import Spinner from '../components/Spinner';
@@ -26,22 +26,22 @@ const HeroSection: React.FC = () => {
   const { isAuthenticated } = useContext(AuthContext);
   return (
     <motion.section
-      className="bg-indigo-600 text-white py-12"
+      className="bg-indigo-500 text-white py-8"
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: 'easeOut' }}
     >
-      <div className="max-w-7xl mx-auto px-4 text-center">
-        <h1 className="text-3xl md:text-4xl font-bold mb-4">
+      <div className="max-w-6xl mx-auto px-4 text-center">
+        <h1 className="text-2xl md:text-3xl font-bold mb-3">
           Your Orders
         </h1>
-        <p className="text-lg md:text-xl mb-6">
+        <p className="text-sm md:text-base mb-4">
           Track and manage your Mount Meru SoyCo orders
         </p>
         {!isAuthenticated && (
           <Link
             to="/signin"
-            className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg text-lg focus:ring-2 focus:ring-green-500"
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm focus:ring-2 focus:ring-green-500"
             aria-label="Sign In to View Orders"
           >
             Sign In to View Orders
@@ -76,21 +76,21 @@ const FilterSortControls: React.FC<{
   ];
 
   return (
-    <div className="flex flex-col sm:flex-row gap-4 mb-8">
+    <div className="flex flex-col sm:flex-row gap-3 mb-6">
       <div className="relative">
         <button
           onClick={() => setIsStatusOpen(!isStatusOpen)}
-          className="flex items-center bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-indigo-500"
+          className="flex items-center bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-gray-700 text-xs hover:bg-gray-50 focus:ring-2 focus:ring-indigo-500"
           aria-expanded={isStatusOpen}
           aria-label="Filter by status"
         >
           <span>
             {statuses.find((s) => s.value === status)?.label || 'Select Status'}
           </span>
-          <ChevronDownIcon className="ml-2 h-5 w-5" />
+          <ChevronDownIcon className="ml-1 h-4 w-4" />
         </button>
         {isStatusOpen && (
-          <div className="absolute z-10 mt-2 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
+          <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg">
             {statuses.map((stat) => (
               <button
                 key={stat.value}
@@ -98,7 +98,7 @@ const FilterSortControls: React.FC<{
                   setStatus(stat.value);
                   setIsStatusOpen(false);
                 }}
-                className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-indigo-50 focus:bg-indigo-100"
+                className="block w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-indigo-50 focus:bg-indigo-100"
                 aria-label={`Filter by ${stat.label}`}
               >
                 {stat.label}
@@ -110,17 +110,17 @@ const FilterSortControls: React.FC<{
       <div className="relative">
         <button
           onClick={() => setIsSortOpen(!isSortOpen)}
-          className="flex items-center bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-indigo-500"
+          className="flex items-center bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-gray-700 text-xs hover:bg-gray-50 focus:ring-2 focus:ring-indigo-500"
           aria-expanded={isSortOpen}
           aria-label="Sort orders"
         >
           <span>
             {sortOptions.find((s) => s.value === sort)?.label || 'Sort By'}
           </span>
-          <ChevronDownIcon className="ml-2 h-5 w-5" />
+          <ChevronDownIcon className="ml-1 h-4 w-4" />
         </button>
         {isSortOpen && (
-          <div className="absolute z-10 mt-2 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
+          <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg">
             {sortOptions.map((option) => (
               <button
                 key={option.value}
@@ -128,7 +128,7 @@ const FilterSortControls: React.FC<{
                   setSort(option.value);
                   setIsSortOpen(false);
                 }}
-                className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-indigo-50 focus:bg-indigo-100"
+                className="block w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-indigo-50 focus:bg-indigo-100"
                 aria-label={`Sort by ${option.label}`}
               >
                 {option.label}
@@ -144,18 +144,18 @@ const FilterSortControls: React.FC<{
 const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
   return (
     <motion.div
-      className="bg-white shadow-md rounded-lg p-6"
+      className="bg-white shadow-sm rounded-lg p-4 border border-gray-100"
       whileHover={{ scale: 1.02 }}
       transition={{ duration: 0.3 }}
       role="region"
       aria-label={`Order ${order.id}`}
     >
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-semibold text-gray-800">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-sm font-semibold text-gray-800">
           Order #{order.id}
         </h3>
         <span
-          className={`text-sm font-medium ${
+          className={`text-xs font-medium ${
             order.status === 'delivered'
               ? 'text-green-500'
               : order.status === 'shipped'
@@ -166,13 +166,13 @@ const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
           {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
         </span>
       </div>
-      <p className="text-gray-600 mb-2">
+      <p className="text-gray-600 text-xs mb-2">
         Placed on: {new Date(order.date).toLocaleDateString()}
       </p>
-      <p className="text-gray-600 mb-2">Total: RWF {order.total.toFixed(2)}</p>
+      <p className="text-gray-600 text-xs mb-2">Total: RWF {order.total.toFixed(2)}</p>
       <div className="mt-2">
-        <h4 className="text-sm font-medium text-gray-700 mb-1">Items:</h4>
-        <ul className="list-disc list-inside text-sm text-gray-600">
+        <h4 className="text-xs font-medium text-gray-700 mb-1">Items:</h4>
+        <ul className="list-disc list-inside text-xs text-gray-600">
           {order.items.map((item, index) => (
             <li key={index}>
               {item.name} - {item.quantity} x RWF {item.price.toFixed(2)}
@@ -223,65 +223,69 @@ const Order: React.FC = () => {
     });
 
   return (
-    <>
-      <HeroSection />
-      <section className="py-16 bg-gray-100">
-        <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold mb-6 text-center">Your Orders</h2>
-          {isAuthenticated ? (
-            <>
-              <FilterSortControls
-                status={status}
-                setStatus={setStatus}
-                sort={sort}
-                setSort={setSort}
-              />
-              {filteredOrders.length === 0 ? (
-                <motion.div
-                  className="text-center"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <p className="text-gray-600 mb-4">No orders found.</p>
-                  <Link
-                    to="/products"
-                    className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500"
-                    aria-label="Shop Now"
+    <div className="min-h-screen flex flex-col bg-gray-50 text-gray-900">
+      <main className="flex-1 pt-12">
+        <HeroSection />
+        <section className="py-12">
+          <div className="max-w-6xl mx-auto px-4">
+            <h2 className="text-2xl font-bold mb-4 text-center">Your Orders</h2>
+            {isAuthenticated ? (
+              <>
+                <FilterSortControls
+                  status={status}
+                  setStatus={setStatus}
+                  sort={sort}
+                  setSort={setSort}
+                />
+                {isLoading ? (
+                  <Spinner loading={true} variant="fullscreen" />
+                ) : filteredOrders.length === 0 ? (
+                  <motion.div
+                    className="text-center"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5 }}
                   >
-                    Shop Now
-                  </Link>
-                </motion.div>
-              ) : (
-                <div className="grid grid-cols-1 gap-6">
-                  {filteredOrders.map((order) => (
-                    <OrderCard key={order.id} order={order} />
-                  ))}
-                </div>
-              )}
-            </>
-          ) : (
-            <motion.div
-              className="text-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              <p className="text-gray-600 mb-4">
-                Please sign in to view your orders.
-              </p>
-              <Link
-                to="/signin"
-                className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500"
-                aria-label="Sign In"
+                    <p className="text-gray-600 text-xs mb-4">No orders found.</p>
+                    <Link
+                      to="/products"
+                      className="bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs hover:bg-indigo-600 focus:ring-2 focus:ring-indigo-500"
+                      aria-label="Shop Now"
+                    >
+                      Shop Now
+                    </Link>
+                  </motion.div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4">
+                    {filteredOrders.map((order) => (
+                      <OrderCard key={order.id} order={order} />
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <motion.div
+                className="text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
               >
-                Sign In
-              </Link>
-            </motion.div>
-          )}
-        </div>
-      </section>
-    </>
+                <p className="text-gray-600 text-xs mb-4">
+                  Please sign in to view your orders.
+                </p>
+                <Link
+                  to="/signin"
+                  className="bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs hover:bg-indigo-600 focus:ring-2 focus:ring-indigo-500"
+                  aria-label="Sign In"
+                >
+                  Sign In
+                </Link>
+              </motion.div>
+            )}
+          </div>
+        </section>
+      </main>
+    </div>
   );
 };
 
