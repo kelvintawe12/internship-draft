@@ -1,12 +1,14 @@
-// src/store/userSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface UserProfile {
+  id: string;
   username: string;
   fullName: string;
+  email: string;
   avatar: string;
   bio: string;
   joinedDate: string;
+  role: 'user' | 'admin';
 }
 
 interface UserState {

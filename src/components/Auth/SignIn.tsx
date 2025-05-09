@@ -1,10 +1,8 @@
 import React, { useEffect, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { useMutation } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
 import { motion } from 'framer-motion';
-import { toast } from 'react-toastify';
 import { Lock, Mail } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
 import { setUser } from '../../store/userSlice';
@@ -14,20 +12,8 @@ interface SignInForm {
   password: string;
 }
 
-interface SignInResponse {
-  user: {
-    username: string;
-    fullName: string;
-    avatar: string;
-    bio: string;
-    joinedDate: string;
-    role: 'user' | 'admin';
-  };
-  token: string;
-}
-
 const SignIn: React.FC = () => {
-  const { isAuthenticated, login } = useContext(AuthContext);
+  const { isAuthenticated, login, isAdmin } = useContext(AuthContext);
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const {
@@ -39,34 +25,32 @@ const SignIn: React.FC = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard');
+      navigate(isAdmin ? '/admin-dashboard' : '/dashboard');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isAdmin, navigate]);
 
-  const mutation = useMutation({
-    mutationFn: async (data: SignInForm) => {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error('Signin failed');
-      return response.json() as Promise<SignInResponse>;
-    },
-    onSuccess: (data) => {
-      dispatch(setUser(data.user));
-      login(data.token);
-      toast.success('Sign in successful!', { theme: 'light' });
+  const onSubmit: SubmitHandler<SignInForm> = async (data) => {
+    try {
+      await login(data.email, data.password);
+      // Dispatch user data to Redux
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      dispatch(
+        setUser({
+          id: user.id || data.email.split('@')[0],
+          username: data.email.split('@')[0],
+          fullName: user.name || 'User',
+          email: user.email,
+          avatar: 'https://example.com/avatar.jpg',
+          bio: 'Logged in user',
+          joinedDate: new Date().toISOString(),
+          role: user.role,
+        })
+      );
       reset();
-      navigate('/dashboard');
-    },
-    onError: () => {
-      toast.error('Sign in failed. Please check your credentials.', { theme: 'light' });
-    },
-  });
-
-  const onSubmit: SubmitHandler<SignInForm> = (data) => {
-    mutation.mutate(data);
+      navigate(user.role === 'admin' ? '/admin-dashboard' : '/dashboard');
+    } catch (error) {
+      // Error handled by AuthContext
+    }
   };
 
   return (
@@ -138,19 +122,24 @@ const SignIn: React.FC = () => {
             </div>
             <motion.button
               type="submit"
-              disabled={mutation.isPending}
+              disabled={false} // Loading handled by AuthContext
               className="w-full bg-indigo-600 text-white py-3 rounded-lg text-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               aria-label="Sign In"
             >
-              {mutation.isPending ? 'Signing In...' : 'Sign In'}
+              Sign In
             </motion.button>
           </form>
           <p className="text-center text-sm text-gray-600 mt-6">
             Don't have an account?{' '}
             <Link to="/signup" className="text-indigo-600 hover:underline" aria-label="Sign Up">
               Sign Up
+            </Link>
+            <br />
+            Forgot your password?{' '}
+            <Link to="/forgot-password" className="text-indigo-600 hover:underline" aria-label="Forgot Password">
+              Reset Password
             </Link>
           </p>
         </motion.div>

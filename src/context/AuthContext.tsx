@@ -13,8 +13,11 @@ interface AuthContextType {
   isAdmin: boolean;
   user: User | null;
   loading: boolean;
+  signup: (name: string, email: string, password: string, role: 'user' | 'admin') => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  verifyEmail: (token: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -22,61 +25,76 @@ export const AuthContext = createContext<AuthContextType>({
   isAdmin: false,
   user: null,
   loading: true,
+  signup: async () => {},
   login: async () => {},
   logout: async () => {},
+  verifyEmail: async () => {},
+  forgotPassword: async () => {},
 });
 
-interface AuthContextProviderProps {
+interface AuthProviderProps {
   children: ReactNode;
 }
 
-export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing auth token in localStorage on mount
     const token = localStorage.getItem('authToken');
     if (token) {
-      // Mock: Simulate fetching user data
-      const mockUser: User = {
-        id: 'user123',
-        name: 'User Name',
-        email: 'user@example.com',
-        role: localStorage.getItem('userRole') === 'admin' ? 'admin' : 'user',
-      };
-      setUser(mockUser);
-      setIsAuthenticated(true);
-      setIsAdmin(mockUser.role === 'admin');
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const parsedUser: User = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setIsAuthenticated(true);
+        setIsAdmin(parsedUser.role === 'admin');
+      }
     }
     setLoading(false);
   }, []);
 
+  const signup = async (name: string, email: string, password: string, role: 'user' | 'admin') => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, role }),
+      });
+      if (!response.ok) throw new Error('Signup failed');
+      const data = await response.json();
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setUser(data.user);
+      setIsAuthenticated(true);
+      setIsAdmin(data.user.role === 'admin');
+      toast.success('Sign up successful! Please check your email to verify.', { theme: 'light' });
+    } catch (error) {
+      toast.error('Failed to sign up. Please try again.', { theme: 'light' });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // Mock API call
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-
-      if (!response.ok) {
-        throw new Error('Login failed');
-      }
-
+      if (!response.ok) throw new Error('Login failed');
       const data = await response.json();
-      const { user: userData, token } = data;
-
-      localStorage.setItem('authToken', token);
-      localStorage.setItem('userRole', userData.role);
-
-      setUser(userData);
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setUser(data.user);
       setIsAuthenticated(true);
-      setIsAdmin(userData.role === 'admin');
+      setIsAdmin(data.user.role === 'admin');
       toast.success('Logged in successfully!', { theme: 'light' });
     } catch (error) {
       toast.error('Invalid email or password.', { theme: 'light' });
@@ -89,34 +107,62 @@ export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({ childr
   const logout = async () => {
     setLoading(true);
     try {
-      // Mock API call
       await fetch('/api/logout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
-
       localStorage.removeItem('authToken');
-      localStorage.removeItem('userRole');
-
+      localStorage.removeItem('user');
       setUser(null);
       setIsAuthenticated(false);
       setIsAdmin(false);
       toast.success('Logged out successfully!', { theme: 'light' });
     } catch (error) {
       toast.error('Failed to log out.', { theme: 'light' });
+      throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  const value: AuthContextType = {
-    isAuthenticated,
-    isAdmin,
-    user,
-    loading,
-    login,
-    logout,
+  const verifyEmail = async (token: string) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/verify-email/${token}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Email verification failed');
+      toast.success('Email verified successfully!', { theme: 'light' });
+    } catch (error) {
+      toast.error('Failed to verify email.', { theme: 'light' });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  const forgotPassword = async (email: string) => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!response.ok) throw new Error('Failed to send reset link');
+      toast.success('Password reset link sent to your email.', { theme: 'light' });
+    } catch (error) {
+      toast.error('Failed to send reset link.', { theme: 'light' });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AuthContext.Provider value={{ isAuthenticated, isAdmin, user, loading, signup, login, logout, verifyEmail, forgotPassword }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

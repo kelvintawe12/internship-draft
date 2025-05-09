@@ -1,7 +1,6 @@
 import React, { useEffect, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { useMutation } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -17,20 +16,8 @@ interface SignUpForm {
   role: 'user' | 'admin';
 }
 
-interface SignUpResponse {
-  user: {
-    username: string;
-    fullName: string;
-    avatar: string;
-    bio: string;
-    joinedDate: string;
-    role: 'user' | 'admin';
-  };
-  token: string;
-}
-
 const SignUp: React.FC = () => {
-  const { isAuthenticated, login } = useContext(AuthContext);
+  const { isAuthenticated, signup, isAdmin } = useContext(AuthContext);
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const {
@@ -43,39 +30,30 @@ const SignUp: React.FC = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard');
+      navigate(isAdmin ? '/admin-dashboard' : '/dashboard');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isAdmin, navigate]);
 
-  const mutation = useMutation({
-    mutationFn: async (data: Omit<SignUpForm, 'confirmPassword'>) => {
-      const response = await fetch('/api/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: data.name,
+  const onSubmit: SubmitHandler<SignUpForm> = async (data) => {
+    try {
+      await signup(data.name, data.email, data.password, data.role);
+      dispatch(
+        setUser({
+          id: data.email.split('@')[0], // Temporary ID until API provides one
+          username: data.email.split('@')[0],
+          fullName: data.name,
           email: data.email,
-          password: data.password,
+          avatar: 'https://example.com/avatar.jpg',
+          bio: 'New user',
+          joinedDate: new Date().toISOString(),
           role: data.role,
-        }),
-      });
-      if (!response.ok) throw new Error('Signup failed');
-      return response.json() as Promise<SignUpResponse>;
-    },
-    onSuccess: (data) => {
-      dispatch(setUser(data.user));
-      login(data.token);
-      toast.success('Sign up successful!', { theme: 'light' });
+        })
+      );
       reset();
-      navigate('/dashboard');
-    },
-    onError: () => {
-      toast.error('Failed to sign up. Please try again.', { theme: 'light' });
-    },
-  });
-
-  const onSubmit: SubmitHandler<SignUpForm> = (data) => {
-    mutation.mutate(data);
+      navigate(data.role === 'admin' ? '/admin-dashboard' : '/dashboard');
+    } catch (error) {
+      // Error handled by AuthContext
+    }
   };
 
   const password = watch('password');
@@ -207,13 +185,13 @@ const SignUp: React.FC = () => {
             </div>
             <motion.button
               type="submit"
-              disabled={mutation.isPending}
+              disabled={false} // Loading handled by AuthContext
               className="w-full bg-indigo-600 text-white py-3 rounded-lg text-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               aria-label="Sign Up"
             >
-              {mutation.isPending ? 'Signing Up...' : 'Sign Up'}
+              Sign Up
             </motion.button>
           </form>
           <p className="text-center text-sm text-gray-600 mt-6">

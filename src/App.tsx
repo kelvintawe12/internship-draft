@@ -3,7 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import store from './store';
 import MainLayout from './layout/MainLayout';
-import { AuthContextProvider } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import Home from './pages/Home';
 import Products from './pages/Products';
 import About from './pages/About';
@@ -14,7 +14,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import NotFound from './pages/NotFound';
 import SignUp from './components/Auth/SignUp';
 import SignIn from './components/Auth/SignIn';
-import VerifyEmail from './pages/VerifyEmail';
+import VerifyEmail from './components/Auth/VerifyEmail';
 import ProtectedRoute from './components/ProtectedRoute';
 import UserDashboardPage from './pages/UserDashboard';
 import DashboardRoutes from './routes/dashboardRoutes';
@@ -23,7 +23,7 @@ import ErrorBoundary from './pages/UserDashboardLayout';
 const App: React.FC = () => {
   return (
     <Provider store={store}>
-      <AuthContextProvider>
+      <AuthProvider>
         <ErrorBoundary>
           <Routes>
             <Route path="/" element={<MainLayout><Home /></MainLayout>} />
@@ -44,11 +44,18 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               }
             />
-            <Route path="/dashboard" element={<UserDashboardPage />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <UserDashboardPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </ErrorBoundary>
-      </AuthContextProvider>
+      </AuthProvider>
     </Provider>
   );
 };

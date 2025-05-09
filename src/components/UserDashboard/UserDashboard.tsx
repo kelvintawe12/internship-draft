@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion } from 'framer-motion';
 import { ChevronDownIcon } from 'lucide-react';
@@ -9,6 +9,7 @@ import { RootState } from '../../store';
 import { setOrders } from '../../store/orderSlice';
 import { setNotifications } from '../../store/notificationSlice';
 import Profile from './Profile';
+import { useNavigate } from 'react-router-dom';
 
 interface OrderItem {
   name: string;
@@ -31,7 +32,8 @@ interface Notification {
 }
 
 const UserDashboard: React.FC = () => {
-  const { isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated, user, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const orders = useSelector((state: RootState) => state.order.orders as Order[]);
   const notifications = useSelector((state: RootState) => state.notification.notifications as Notification[]);
@@ -89,6 +91,15 @@ const UserDashboard: React.FC = () => {
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/signin');
+    } catch (error) {
+      // Error handled by logout
+    }
+  };
+
   const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
     return (
       <motion.div
@@ -132,11 +143,23 @@ const UserDashboard: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-12">
-      <h1 className="text-2xl font-bold mb-4 text-center text-gray-800">User Dashboard</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">
+          {user ? `Welcome, ${user.name}` : 'User Dashboard'}
+        </h1>
+        {isAuthenticated && (
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 text-white py-1.5 px-4 rounded-lg text-sm hover:bg-red-600 focus:ring-2 focus:ring-red-500"
+            aria-label="Log Out"
+          >
+            Log Out
+          </button>
+        )}
+      </div>
       {isAuthenticated ? (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
-            {/* Recent Orders */}
             <div className="lg:col-span-2">
               <h2 className="text-lg font-semibold mb-3 text-gray-800">Recent Orders</h2>
               <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -213,7 +236,6 @@ const UserDashboard: React.FC = () => {
                 </div>
               )}
             </div>
-            {/* Profile and Notifications */}
             <div>
               <div className="flex space-x-2 mb-3">
                 <button

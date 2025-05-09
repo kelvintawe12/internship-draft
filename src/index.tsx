@@ -8,6 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import App from './App';
 import './index.css';
 import store from './store';
+import { AuthProvider } from './context/AuthContext';
 
 if (process.env.NODE_ENV === 'development') {
   import('./mocks/browser').then(({ worker }) => {
@@ -25,12 +26,14 @@ const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement)
 root.render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Provider store={store}>
-          <App />
-          <ToastContainer theme="light" position="top-right" autoClose={3000} />
-        </Provider>
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          <Provider store={store}>
+            <App />
+            <ToastContainer theme="light" position="top-right" autoClose={3000} />
+          </Provider>
+        </BrowserRouter>
+      </AuthProvider>
     </QueryClientProvider>
   </React.StrictMode>
 );
