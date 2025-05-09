@@ -117,7 +117,13 @@ const updatePreferences = async (preferences: Preferences) => {
   return response.json();
 };
 
-const UserDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+interface UserDashboardLayoutProps {
+  children: React.ReactNode;
+  activeSection: string;
+  setActiveSection: React.Dispatch<React.SetStateAction<string>>;
+}
+
+const UserDashboardLayout: React.FC<UserDashboardLayoutProps> = ({ children, activeSection, setActiveSection }) => {
   const { isAuthenticated, user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -128,7 +134,6 @@ const UserDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children
   const activities = useSelector((state: RootState) => state.activity.activities) as Activity[];
   const tickets = useSelector((state: RootState) => state.support.tickets) as Ticket[];
   const messages = useSelector((state: RootState) => state.message.messages) as Message[];
-  const [activeSection, setActiveSection] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
