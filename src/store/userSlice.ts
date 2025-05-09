@@ -1,41 +1,31 @@
+// src/store/userSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-interface UserSettings {
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  language: string;
-  timezone: string;
-  theme: 'light' | 'dark';
-  notifications: {
-    email: boolean;
-    push: boolean;
-    sms: boolean;
-  };
-  twoFactorEnabled: boolean;
+interface UserProfile {
+  username: string;
+  fullName: string;
+  avatar: string;
+  bio: string;
+  joinedDate: string;
 }
 
 interface UserState {
-  settings: UserSettings | null;
+  profile: UserProfile | null;
 }
 
 const initialState: UserState = {
-  settings: null,
+  profile: null,
 };
 
 const userSlice = createSlice({
   name: 'user',
   initialState,
   reducers: {
-    setSettings(state, action: PayloadAction<UserSettings>) {
-      state.settings = action.payload;
-    },
-    clearSettings(state) {
-      state.settings = null;
+    setUser(state, action: PayloadAction<UserProfile>) {
+      state.profile = action.payload;
     },
   },
 });
 
-export const { setSettings, clearSettings } = userSlice.actions;
+export const { setUser } = userSlice.actions;
 export default userSlice.reducer;

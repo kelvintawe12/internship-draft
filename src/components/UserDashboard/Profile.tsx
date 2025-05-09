@@ -1,60 +1,72 @@
-import React, { useEffect, useState } from 'react';
-import ErrorBoundary from '../ErrorBoundary';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '../../store';
+import { toast } from 'react-toastify';
+import { setUser } from '../../store/userSlice';
+import { motion } from 'framer-motion';
 
 interface UserProfile {
-  name: string;
-  email: string;
-  phone?: string;
-  address?: string;
+  username: string;
+  fullName: string;
+  avatar: string;
+  bio: string;
+  joinedDate: string;
 }
 
 const Profile: React.FC = () => {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const dispatch = useDispatch();
+  const user = useSelector((state: RootState) => state.user.profile);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch('/api/user/profile');
-        if (!response.ok) throw new Error('Failed to fetch profile');
-        const data: UserProfile = await response.json();
-        setProfile(data);
-        setError(null);
-      } catch (err) {
-        setError((err as Error).message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProfile();
-  }, []);
-
-  if (loading) {
-    return <p className="text-xs text-gray-600 p-4">Loading profile...</p>;
-  }
+  const { isLoading, error } = useQuery({
+    queryKey: ['userProfile'],
+    queryFn: async () => {
+      const response = await fetch('/api/user/profile');
+      if (!response.ok) throw new Error('Failed to fetch profile');
+      const data = await response.json();
+      dispatch(setUser(data));
+      return data;
+    },
+  });
 
   if (error) {
-    return <p className="text-xs text-red-500 p-4">Error: {error}</p>;
-  }
-
-  if (!profile) {
-    return <p className="text-xs text-gray-600 p-4">No profile data available.</p>;
+    toast.error('Failed to fetch profile.', { theme: 'light' });
   }
 
   return (
-    <ErrorBoundary>
-      <div className="p-4">
-        <h2 className="text-lg font-semibold mb-3 text-gray-800">Profile</h2>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 max-w-md">
-          <p className="text-xs"><strong>Name:</strong> {profile.name}</p>
-          <p className="text-xs"><strong>Email:</strong> {profile.email}</p>
-          {profile.phone && <p className="text-xs"><strong>Phone:</strong> {profile.phone}</p>}
-          {profile.address && <p className="text-xs"><strong>Address:</strong> {profile.address}</p>}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="bg-white shadow-sm rounded-lg p-4 border border-gray-100"
+      role="region"
+      aria-label="User Profile"
+    >
+      <h2 className="text-lg font-semibold mb-3 text-gray-800">Profile</h2>
+      {isLoading ? (
+        <p className="text-xs text-gray-600">Loading profile...</p>
+      ) : !user ? (
+        <p className="text-xs text-gray-600">No profile data available.</p>
+      ) : (
+        <div className="space-y-2">
+          <div className="flex items-center space-x-3">
+            <img
+              src={user.avatar}
+              alt="Avatar"
+              className="w-12 h-12 rounded-full object-cover"
+            />
+            <div>
+              <p className="text-sm font-medium text-gray-800">{user.fullName}</p>
+              <p className="text-xs text-gray-500">@{user.username}</p>
+            </div>
+          </div>
+          <p className="text-xs text-gray-600">{user.bio}</p>
+          <p className="text-xs text-gray-500">
+            Joined: {new Date(user.joinedDate).toLocaleDateString()}
+          </p>
         </div>
-      </div>
-    </ErrorBoundary>
+      )}
+    </motion.div>
   );
 };
 

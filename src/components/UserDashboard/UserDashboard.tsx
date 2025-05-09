@@ -3,8 +3,12 @@ import { useSelector, useDispatch } from 'react-redux';
 import { motion } from 'framer-motion';
 import { ChevronDownIcon } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useQuery } from '@tanstack/react-query';
 import { AuthContext } from '../../context/AuthContext';
 import { RootState } from '../../store';
+import { setOrders } from '../../store/orderSlice';
+import { setNotifications } from '../../store/notificationSlice';
+import Profile from './Profile';
 
 interface OrderItem {
   name: string;
@@ -31,34 +35,32 @@ const UserDashboard: React.FC = () => {
   const dispatch = useDispatch();
   const orders = useSelector((state: RootState) => state.order.orders as Order[]);
   const notifications = useSelector((state: RootState) => state.notification.notifications as Notification[]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'profile' | 'notifications'>('profile');
   const [status, setStatus] = useState('all');
   const [sort, setSort] = useState('date-desc');
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      const fetchData = async () => {
-        setIsLoading(true);
-        try {
-          const [ordersResponse, notificationsResponse] = await Promise.all([
-            fetch('/api/orders'),
-            fetch('/api/notifications'),
-          ]);
-          const ordersData = await ordersResponse.json();
-          const notificationsData = await notificationsResponse.json();
-          dispatch({ type: 'order/setOrders', payload: ordersData });
-          dispatch({ type: 'notification/setNotifications', payload: notificationsData });
-        } catch (error) {
-          toast.error('Failed to fetch data.', { theme: 'light' });
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      fetchData();
-    } else {
-      setIsLoading(false);
-    }
-  }, [isAuthenticated, dispatch]);
+  const { isLoading, error } = useQuery({
+    queryKey: ['dashboardData'],
+    queryFn: async () => {
+      const [ordersResponse, notificationsResponse] = await Promise.all([
+        fetch('/api/orders'),
+        fetch('/api/notifications'),
+      ]);
+      if (!ordersResponse.ok || !notificationsResponse.ok) {
+        throw new Error('Failed to fetch data');
+      }
+      const ordersData = await ordersResponse.json();
+      const notificationsData = await notificationsResponse.json();
+      dispatch(setOrders(ordersData));
+      dispatch(setNotifications(notificationsData));
+      return { ordersData, notificationsData };
+    },
+    enabled: isAuthenticated,
+  });
+
+  if (error) {
+    toast.error('Failed to fetch data.', { theme: 'light' });
+  }
 
   const filteredOrders = orders
     .filter((order) => (status === 'all' ? true : order.status === status))
@@ -97,9 +99,7 @@ const UserDashboard: React.FC = () => {
         aria-label={`Order ${order.id}`}
       >
         <div className="flex justify-between items-center mb-3">
-          <h3 className="text-sm font-semibold text-gray-800">
-            Order #{order.id}
-          </h3>
+          <h3 className="text-sm font-semibold text-gray-800">Order #{order.id}</h3>
           <span
             className={`text-xs font-medium ${
               order.status === 'delivered'
@@ -127,8 +127,8 @@ const UserDashboard: React.FC = () => {
           </ul>
         </div>
       </motion.div>
-  );
-};
+    );
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-12">
@@ -213,22 +213,57 @@ const UserDashboard: React.FC = () => {
                 </div>
               )}
             </div>
-            {/* Recent Notifications */}
+            {/* Profile and Notifications */}
             <div>
-              <h2 className="text-lg font-semibold mb-3 text-gray-800">Recent Notifications</h2>
-              {isLoading ? (
-                <p className="text-xs text-gray-600">Loading notifications...</p>
-              ) : notifications.length === 0 ? (
-                <p className="text-xs text-gray-600">No notifications.</p>
+              <div className="flex space-x-2 mb-3">
+                <button
+                  onClick={() => setActiveTab('profile')}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
+                    activeTab === 'profile'
+                      ? 'bg-indigo-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                  aria-label="View profile"
+                >
+                  Profile
+                </button>
+                <button
+                  onClick={() => setActiveTab('notifications')}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
+                    activeTab === 'notifications'
+                      ? 'bg-indigo-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                  aria-label="View notifications"
+                >
+                  Notifications
+                </button>
+              </div>
+              {activeTab === 'profile' ? (
+                <Profile />
               ) : (
-                <ul className="space-y-2">
-                  {notifications.slice(0, 3).map((notification) => (
-                    <li key={notification.id} className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
-                      <p className="text-xs text-gray-800">{notification.message}</p>
-                      <small className="text-xs text-gray-500">{new Date(notification.date).toLocaleDateString()}</small>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <h2 className="text-lg font-semibold mb-3 text-gray-800">Recent Notifications</h2>
+                  {isLoading ? (
+                    <p className="text-xs text-gray-600">Loading notifications...</p>
+                  ) : notifications.length === 0 ? (
+                    <p className="text-xs text-gray-600">No notifications.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {notifications.slice(0, 3).map((notification) => (
+                        <li
+                          key={notification.id}
+                          className="p-3 bg-white rounded-lg shadow-sm border border-gray-100"
+                        >
+                          <p className="text-xs text-gray-800">{notification.message}</p>
+                          <small className="text-xs text-gray-500">
+                            {new Date(notification.date).toLocaleDateString()}
+                          </small>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
               )}
             </div>
           </div>

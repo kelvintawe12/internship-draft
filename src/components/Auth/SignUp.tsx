@@ -1,11 +1,13 @@
 import React, { useEffect, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm, SubmitHandler } from 'react-hook-form';
+import { useMutation } from '@tanstack/react-query';
+import { useDispatch } from 'react-redux';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { Lock, Mail, User } from 'lucide-react';
-import { AuthContext } from '../context/AuthContext';
-import axios from 'axios';
+import { AuthContext } from '../../context/AuthContext';
+import { setUser } from '../../store/userSlice';
 
 interface SignUpForm {
   name: string;
@@ -15,9 +17,22 @@ interface SignUpForm {
   role: 'user' | 'admin';
 }
 
+interface SignUpResponse {
+  user: {
+    username: string;
+    fullName: string;
+    avatar: string;
+    bio: string;
+    joinedDate: string;
+    role: 'user' | 'admin';
+  };
+  token: string;
+}
+
 const SignUp: React.FC = () => {
-  const { isAuthenticated, loading } = useContext(AuthContext);
+  const { isAuthenticated, login } = useContext(AuthContext);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const {
     register,
     handleSubmit,
@@ -28,31 +43,39 @@ const SignUp: React.FC = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/');
+      navigate('/dashboard');
     }
   }, [isAuthenticated, navigate]);
 
-  const onSubmit: SubmitHandler<SignUpForm> = async (data) => {
-    try {
-      const response = await axios.post('/api/signup', {
-        name: data.name,
-        email: data.email,
-        password: data.password,
-        role: data.role,
+  const mutation = useMutation({
+    mutationFn: async (data: Omit<SignUpForm, 'confirmPassword'>) => {
+      const response = await fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+          role: data.role,
+        }),
       });
-
-      if (response.status !== 200) {
-        throw new Error('Signup failed');
-      }
-
-      toast.success('Sign up successful! Please check your email to verify your account.', {
-        theme: 'light',
-      });
+      if (!response.ok) throw new Error('Signup failed');
+      return response.json() as Promise<SignUpResponse>;
+    },
+    onSuccess: (data) => {
+      dispatch(setUser(data.user));
+      login(data.token);
+      toast.success('Sign up successful!', { theme: 'light' });
       reset();
-      navigate('/signin');
-    } catch (error) {
+      navigate('/dashboard');
+    },
+    onError: () => {
       toast.error('Failed to sign up. Please try again.', { theme: 'light' });
-    }
+    },
+  });
+
+  const onSubmit: SubmitHandler<SignUpForm> = (data) => {
+    mutation.mutate(data);
   };
 
   const password = watch('password');
@@ -83,7 +106,7 @@ const SignUp: React.FC = () => {
                   id="name"
                   type="text"
                   {...register('name', { required: 'Name is required' })}
-                  className="w-full border border-gray-300 rounded-lg pl-10 p-3 focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-gray-300 rounded-lg pl-10 p-3 focus:ring-2 focus:ring-indigo-500 text-sm"
                   placeholder="Full Name"
                   aria-invalid={errors.name ? 'true' : 'false'}
                 />
@@ -110,7 +133,7 @@ const SignUp: React.FC = () => {
                       message: 'Invalid email address',
                     },
                   })}
-                  className="w-full border border-gray-300 rounded-lg pl-10 p-3 focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-gray-300 rounded-lg pl-10 p-3 focus:ring-2 focus:ring-indigo-500 text-sm"
                   placeholder="Email Address"
                   aria-invalid={errors.email ? 'true' : 'false'}
                 />
@@ -134,7 +157,7 @@ const SignUp: React.FC = () => {
                     required: 'Password is required',
                     minLength: { value: 6, message: 'Password must be at least 6 characters' },
                   })}
-                  className="w-full border border-gray-300 rounded-lg pl-10 p-3 focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-gray-300 rounded-lg pl-10 p-3 focus:ring-2 focus:ring-indigo-500 text-sm"
                   placeholder="Password"
                   aria-invalid={errors.password ? 'true' : 'false'}
                 />
@@ -158,7 +181,7 @@ const SignUp: React.FC = () => {
                     required: 'Please confirm your password',
                     validate: (value) => value === password || 'Passwords do not match',
                   })}
-                  className="w-full border border-gray-300 rounded-lg pl-10 p-3 focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-gray-300 rounded-lg pl-10 p-3 focus:ring-2 focus:ring-indigo-500 text-sm"
                   placeholder="Confirm Password"
                   aria-invalid={errors.confirmPassword ? 'true' : 'false'}
                 />
@@ -176,7 +199,7 @@ const SignUp: React.FC = () => {
               <select
                 id="role"
                 {...register('role')}
-                className="w-full border border-gray-300 rounded-md p-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition"
+                className="w-full border border-gray-300 rounded-md p-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition"
               >
                 <option value="user">User</option>
                 <option value="admin">Admin</option>
@@ -184,16 +207,16 @@ const SignUp: React.FC = () => {
             </div>
             <motion.button
               type="submit"
-              disabled={loading}
-              className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+              disabled={mutation.isPending}
+              className="w-full bg-indigo-600 text-white py-3 rounded-lg text-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               aria-label="Sign Up"
             >
-              {loading ? 'Signing Up...' : 'Sign Up'}
+              {mutation.isPending ? 'Signing Up...' : 'Sign Up'}
             </motion.button>
           </form>
-          <p className="text-center text-gray-600 mt-6">
+          <p className="text-center text-sm text-gray-600 mt-6">
             Already have an account?{' '}
             <Link to="/signin" className="text-indigo-600 hover:underline" aria-label="Sign In">
               Sign In
